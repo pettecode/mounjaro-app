@@ -369,7 +369,6 @@
             renderSchedule(); 
         }
 
-        // --- 核心修正區：加入「保留體重」或「整筆刪除」的智慧選擇邏輯 ---
         function deleteHistoryItem(type, date) {
             if (type === 'dose') {
                 if(!confirm(`確定要刪除 ${date} 的施打紀錄嗎？\n(💡 刪除後，該次劑量會自動加回上方庫存)`)) return;
@@ -395,20 +394,32 @@
 
                 let startDate = date;
                 let endDate = (idx < newPenEvents.length - 1) ? newPenEvents[idx + 1].date : "9999-12-31";
-                let affectedDoses = records.filter(r => r.dose > 0 && r.date >= startDate && r.date < endDate);
+                let affectedRecords = records.filter(r => r.date >= startDate && r.date < endDate);
+                let affectedDosesCount = affectedRecords.filter(r => r.dose > 0).length;
+                let hasMetrics = affectedRecords.some(r => r.weight || r.bodyFat || r.visceralFat || r.bmr);
 
                 let msg = `確定要刪除這筆開啟新針的紀錄嗎？\n`;
-                if (affectedDoses.length > 0) {
-                    msg += `⚠️ 注意：跟著這支筆施打的 ${affectedDoses.length} 筆紀錄也會一併清除！\n`;
+                if (affectedDosesCount > 0) {
+                    msg += `⚠️ 注意：跟著這支筆施打的 ${affectedDosesCount} 筆紀錄也會一併清除！\n`;
                 }
                 msg += `(計畫表將自動退回上一支筆的設定)`;
 
                 if(!confirm(msg)) return;
 
-                records.forEach(r => {
-                    if (r.dose > 0 && r.date >= startDate && r.date < endDate) r.dose = 0;
+                let deleteAllMetrics = false;
+                if (hasMetrics) {
+                    deleteAllMetrics = confirm(`【進階確認】在這支筆的期間內，您也有記錄「體重等指標」。\n請問要連同這些體重指標【全部一併刪除】嗎？\n\n▶ 按「確定」：連同體重全部清空\n▶ 按「取消」：保留體重，僅清除打針紀錄`);
+                }
+
+                records = records.filter(r => {
+                    if (r.date >= startDate && r.date < endDate) {
+                        if (deleteAllMetrics) return false; 
+                        r.dose = 0; 
+                        if (!r.weight && !r.bodyFat && !r.visceralFat && !r.bmr) return false;
+                        return true;
+                    }
+                    return true;
                 });
-                records = records.filter(r => r.weight || r.bodyFat || r.visceralFat || r.bmr || r.dose > 0);
 
                 newPenEvents.splice(idx, 1);
 
@@ -424,7 +435,6 @@
             localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
             recalculateStock(); refreshUI();
         }
-        // -----------------------------------------------------------
 
         function renderHistory(injections, newPens) {
             let list = document.getElementById('historyList');
