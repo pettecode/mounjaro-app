@@ -391,7 +391,13 @@
             list.innerHTML = '';
             if (injections.length === 0 && newPens.length === 0) { noHistory.style.display = 'block'; return; }
             noHistory.style.display = 'none';
-            let combined = [...injections.map(r=>({type:'dose',date:r.date,text:r.dose+'mg'})), ...newPens.map(p=>({type:'pen',date:p.date,text:p.name}))];
+            
+            // 這裡加入字串處理：如果 type 是 pen (新針)，就用 split 截斷括號後面的字
+            let combined = [
+                ...injections.map(r=>({type:'dose',date:r.date,text:r.dose+'mg'})), 
+                ...newPens.map(p=>({type:'pen',date:p.date,text:p.name.split(' (')[0]}))
+            ];
+            
             combined.sort((a,b) => b.date.localeCompare(a.date));
             combined.forEach(item => {
                 let li = document.createElement('li'); li.className = 'history-item';
@@ -467,7 +473,8 @@
                         legend: { display: false }, title: { display: true, text: title },
                         tooltip: { callbacks: { footer: (items) => {
                             let d = items[0].label; let r = records.find(x => x.date === d); let p = newPenEvents.find(x => x.date === d);
-                            let lines = []; if(p) lines.push('🆕啟用: ' + p.name); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
+                            // 圖表上的 tooltip 也幫您同步截斷括號，保持版面清爽
+                            let lines = []; if(p) lines.push('🆕啟用: ' + p.name.split(' (')[0]); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
                             return lines.length > 0 ? '\n' + lines.join('\n') : null;
                         }}}
                     },
