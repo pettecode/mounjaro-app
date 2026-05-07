@@ -227,13 +227,28 @@
             recalculateStock(); 
             refreshUI();
             
-            // 修正：抓取使用者本地裝置的今天日期，徹底解決半夜出現時差的問題
             let today = new Date();
             let yyyy = today.getFullYear();
             let mm = String(today.getMonth() + 1).padStart(2, '0');
             let dd = String(today.getDate()).padStart(2, '0');
             document.getElementById('recordDate').value = `${yyyy}-${mm}-${dd}`;
         };
+
+        // --- 核心新增：監聽網頁從背景回到螢幕（可見）時的事件 ---
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === 'visible') {
+                recalculateStock(); 
+                refreshUI();
+                
+                // 強制讓日期回到當下真正的「今天」
+                let today = new Date();
+                let yyyy = today.getFullYear();
+                let mm = String(today.getMonth() + 1).padStart(2, '0');
+                let dd = String(today.getDate()).padStart(2, '0');
+                document.getElementById('recordDate').value = `${yyyy}-${mm}-${dd}`;
+            }
+        });
+        // ---------------------------------------------------
 
         function recalculateStock() {
             if (newPenEvents.length === 0) {
