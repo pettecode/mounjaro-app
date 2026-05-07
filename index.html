@@ -69,12 +69,14 @@
         .history-newpen { background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-right: 8px;}
         .delete-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: 0.2s; }
         
-        .chart-scroll-container { width: 100%; overflow-x: auto; margin-bottom: 25px; -webkit-overflow-scrolling: touch; border-radius: 8px; background: #fff; }
-        .chart-inner { min-width: 100%; height: 240px; }
-        .chart-scroll-container::-webkit-scrollbar { height: 6px; }
-        .chart-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
+        .chart-scroll-container { width: 100%; overflow-x: auto; margin-bottom: 25px; -webkit-overflow-scrolling: touch; border-radius: 8px; background: #fff; padding-bottom: 8px; }
+        /* 這裡加上 position: relative 確保 Chart.js 知道邊界 */
+        .chart-inner { position: relative; min-width: 100%; height: 240px; } 
+        .chart-scroll-container::-webkit-scrollbar { height: 12px; -webkit-appearance: none; }
+        .chart-scroll-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .chart-scroll-container::-webkit-scrollbar-thumb { background: #bbdefb; border-radius: 10px; border: 2px solid #f1f1f1; }
+        .chart-scroll-container::-webkit-scrollbar-thumb:hover, .chart-scroll-container::-webkit-scrollbar-thumb:active { background: var(--primary); }
         
-        /* 備份區塊的樣式 */
         .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
     </style>
 </head>
@@ -392,7 +394,6 @@
             if (injections.length === 0 && newPens.length === 0) { noHistory.style.display = 'block'; return; }
             noHistory.style.display = 'none';
             
-            // 這裡加入字串處理：如果 type 是 pen (新針)，就用 split 截斷括號後面的字
             let combined = [
                 ...injections.map(r=>({type:'dose',date:r.date,text:r.dose+'mg'})), 
                 ...newPens.map(p=>({type:'pen',date:p.date,text:p.name.split(' (')[0]}))
@@ -427,6 +428,14 @@
             let v = parseFloat(document.getElementById('visceralFat').value) || null;
             let b = parseFloat(document.getElementById('bmr').value) || null;
             if(!w && !f && !v && !b && d === 0) return alert("請輸入數據！");
+            
+            if(d > 0) {
+                if(d > currentRemaining) {
+                    return alert(`⚠️ 庫存不足！\n\n目前藥劑僅剩 ${currentRemaining} mg，無法再施打 ${d} mg。`);
+                }
+                if(!confirm(`確認扣除 ${d}mg 庫存嗎？`)) return;
+            }
+
             let idx = records.findIndex(r => r.date === date);
             if(idx !== -1) records[idx] = { date, weight: w||records[idx].weight, bodyFat: f||records[idx].bodyFat, visceralFat: v||records[idx].visceralFat, bmr: b||records[idx].bmr, dose: records[idx].dose + d };
             else records.push({ date, weight: w, bodyFat: f, visceralFat: v, bmr: b, dose: d });
@@ -439,9 +448,15 @@
         function createChart(id, title, data, color, dates) {
             let ctx = document.getElementById(id).getContext('2d');
             let container = document.getElementById(id + 'Container');
-            let minPointSpacing = 45; 
+            
+            // --- 唯一修改的地方：加大間距，讓圖表寬度大於手機螢幕，強制產生滾動條 ---
+            let minPointSpacing = 75; 
+            let parentWidth = container.parentElement.clientWidth || window.innerWidth - 60;
             let calculatedWidth = dates.length * minPointSpacing;
-            container.style.width = Math.max(container.parentElement.clientWidth, calculatedWidth) + 'px';
+            
+            // 將圖表的容器寬度固定，如果點太少就用預設螢幕寬，點多就無限向右長
+            container.style.width = Math.max(parentWidth, calculatedWidth) + 'px';
+            // -----------------------------------------------------------
 
             if (chartInstances[id]) chartInstances[id].destroy();
             
@@ -473,7 +488,6 @@
                         legend: { display: false }, title: { display: true, text: title },
                         tooltip: { callbacks: { footer: (items) => {
                             let d = items[0].label; let r = records.find(x => x.date === d); let p = newPenEvents.find(x => x.date === d);
-                            // 圖表上的 tooltip 也幫您同步截斷括號，保持版面清爽
                             let lines = []; if(p) lines.push('🆕啟用: ' + p.name.split(' (')[0]); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
                             return lines.length > 0 ? '\n' + lines.join('\n') : null;
                         }}}
@@ -497,7 +511,11 @@
                     }
                 }]
             });
-            container.parentElement.scrollLeft = container.scrollWidth;
+            
+            // 讓圖表畫完後，自動將滾動條滑到最右側（看到最新資料）
+            setTimeout(() => {
+                container.parentElement.scrollLeft = container.parentElement.scrollWidth;
+            }, 50);
         }
 
         function renderCharts() {
@@ -533,7 +551,6 @@
             refreshUI();
         }
 
-        // --- 新增：備份與還原功能 ---
         function exportData() {
             let backupObj = {
                 remaining: localStorage.getItem('mounjaro_remaining'),
