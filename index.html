@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>猛健樂紀錄小幫手</title>
-    <!-- 引入 Chart.js 圖表套件 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            /* 替換為質感藍色調 */
-            --primary: #1976D2;       /* 主色：醫療藍 */
-            --primary-dark: #1565C0;  /* 深藍色 (Hover用) */
-            --bg-color: #f0f4f8;      /* 帶點藍灰的清爽底色 */
+            --primary: #1976D2;
+            --primary-dark: #1565C0;
+            --bg-color: #f0f4f8;
             --card-bg: #ffffff;
             --text-main: #2c3e50;
             --text-muted: #7f8c8d;
@@ -37,11 +35,8 @@
         .schedule-item.current { background: var(--text-main); border-color: var(--text-main); transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .schedule-item.current span { color: #bdc3c7; }
         .schedule-item.current strong { color: white; }
-        
-        /* 已完成的進度改為淡藍色底 */
         .schedule-item.completed { background: #e3f2fd; border-color: #bbdefb; opacity: 0.8; }
         .schedule-item.completed strong { color: var(--primary-dark); }
-        
         .schedule-item.empty { opacity: 0.4; background: #f9f9f9; }
 
         .schedule-item select { padding: 4px; font-size: 0.8rem; width: 90%; margin: auto; text-align: center; border-radius: 4px; border: 1px solid #ccc;}
@@ -49,8 +44,11 @@
         .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
         .input-item { flex: 1 1 calc(50% - 10px); min-width: 120px; }
         label { display: block; margin-bottom: 6px; color: #555; font-weight: 600; font-size: 0.9rem; }
-        input, select { padding: 12px; width: 100%; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fafafa;}
+        
+        /* 修正日期框凸出的 CSS */
+        input, select { padding: 12px; width: 100%; max-width: 100%; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fafafa;}
         input:focus, select:focus { border-color: var(--primary); outline: none; background-color: white;}
+        
         button.main-btn { padding: 14px; width: 100%; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 10px; box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);}
         button.main-btn:hover { background: var(--primary-dark); }
         .btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; }
@@ -67,7 +65,6 @@
     <div class="card">
         <h3>💉 本支藥劑庫存</h3>
         <p style="text-align: center; font-size: 1.1rem; margin: 10px 0 20px 0;">目前剩餘: <strong class="highlight" id="remainingDose">0</strong> <strong>mg</strong></p>
-        
         <select id="penType" style="margin-bottom: 10px;">
             <option value="20">猛健樂 5mg (總劑量 20mg)</option>
             <option value="40">猛健樂 10mg (總劑量 40mg)</option>
@@ -79,77 +76,65 @@
 
     <div class="card">
         <h3>📝 新增日常紀錄</h3>
-
         <div class="schedule-box">
             <div class="schedule-header">
                 <h4>📅 專屬施打計畫表</h4>
                 <button class="edit-btn" onclick="toggleEditSchedule()" id="editBtn">編輯計畫</button>
             </div>
-            <div class="schedule-grid" id="scheduleGrid"></div>
-            <p style="font-size: 0.75rem; color: #888; margin: 10px 0 0 0; text-align: center;" id="scheduleNotice"></p>
+            <div id="scheduleGrid" class="schedule-grid"></div>
+            <p id="scheduleNotice" style="font-size: 0.75rem; color: #888; margin: 10px 0 0 0; text-align: center;"></p>
         </div>
         
-        <div class="input-item" style="margin-bottom: 15px;">
+        <div style="margin-bottom: 15px;">
             <label>日期 (可點選修改):</label>
             <input type="date" id="recordDate">
         </div>
 
         <div class="input-group">
-            <div class="input-item"><label>體重 (kg):</label><input type="number" id="weight" step="0.1"></div>
-            <div class="input-item"><label>體脂 (%):</label><input type="number" id="bodyFat" step="0.1"></div>
-            <div class="input-item"><label>內臟脂肪:</label><input type="number" id="visceralFat" step="0.5"></div>
-            <div class="input-item"><label>基礎代謝 (kcal):</label><input type="number" id="bmr"></div>
+            <div class="input-item"><label>體重 (kg):</label><input type="number" id="weight" step="0.1" inputmode="decimal"></div>
+            <div class="input-item"><label>體脂 (%):</label><input type="number" id="bodyFat" step="0.1" inputmode="decimal"></div>
+            <div class="input-item"><label>內臟脂肪:</label><input type="number" id="visceralFat" step="0.1" inputmode="decimal"></div>
+            <div class="input-item"><label>基礎代謝:</label><input type="number" id="bmr" inputmode="numeric"></div>
         </div>
 
-        <div class="input-item" style="margin-bottom: 10px;">
+        <div style="margin-bottom: 10px;">
             <label>本次施打劑量 (mg):</label>
             <select id="dose">
                 <option value="0">沒打請留白 (0 mg)</option>
                 <option value="2.5">2.5 mg</option>
-                <option value="5">5.0 mg</option>
+                <option value="5">5 mg</option>
                 <option value="7.5">7.5 mg</option>
-                <option value="10">10.0 mg</option>
+                <option value="10">10 mg</option>
                 <option value="12.5">12.5 mg</option>
-                <option value="15">15.0 mg</option>
+                <option value="15">15 mg</option>
             </select>
         </div>
-
         <button class="main-btn" onclick="saveRecord()">儲存紀錄</button>
     </div>
 
     <div class="card">
         <h3>📈 各項指標趨勢</h3>
-        <div id="chartsContainer">
-            <div class="chart-wrapper"><canvas id="weightChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="bodyFatChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="visceralFatChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="bmrChart"></canvas></div>
-        </div>
-        <button class="btn-outline" style="margin-top:20px; border-color:#e53935; color:#e53935;" onclick="clearData()">⚠️ 清除所有資料 (重置)</button>
+        <div class="chart-wrapper"><canvas id="weightChart"></canvas></div>
+        <div class="chart-wrapper"><canvas id="bodyFatChart"></canvas></div>
+        <div class="chart-wrapper"><canvas id="visceralFatChart"></canvas></div>
+        <div class="chart-wrapper"><canvas id="bmrChart"></canvas></div>
+        <button class="btn-outline" style="margin-top:20px; border-color:#e53935; color:#e53935;" onclick="clearData()">⚠️ 清除所有資料</button>
     </div>
 
     <script>
         let currentRemaining = parseFloat(localStorage.getItem('mounjaro_remaining')) || 0;
         let penCapacity = parseFloat(localStorage.getItem('mounjaro_capacity')) || 0;
         let records = JSON.parse(localStorage.getItem('mounjaro_records')) || [];
-        
         let rawNewPens = JSON.parse(localStorage.getItem('mounjaro_newpens')) || [];
-        let newPenEvents = rawNewPens.map(item => {
-            if (typeof item === 'string') return { date: item, name: '猛健樂 (未知規格)' };
-            return item;
-        });
-        
-        let defaultSchedule = [0,0,0,0,0,0,0,0,0,0];
-        let userSchedule = JSON.parse(localStorage.getItem('mounjaro_schedule')) || defaultSchedule;
+        let newPenEvents = rawNewPens.map(item => (typeof item === 'string' ? { date: item, name: '猛健樂' } : item));
+        let userSchedule = JSON.parse(localStorage.getItem('mounjaro_schedule')) || [0,0,0,0,0,0,0,0,0,0];
         let isEditingSchedule = false;
         let chartInstances = {};
-        
         let currentExpectedDose = 0;
 
         window.onload = function() {
             document.getElementById('remainingDose').innerText = currentRemaining;
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('recordDate').value = today;
+            document.getElementById('recordDate').value = new Date().toISOString().split('T')[0];
             renderSchedule();
             renderCharts();
             updateExpectedDoseUI(); 
@@ -158,59 +143,38 @@
         function updateExpectedDoseUI() {
             let latestNewPenDate = newPenEvents.length > 0 ? newPenEvents[newPenEvents.length - 1].date : "1900-01-01";
             let currentPenDoses = records.filter(r => r.dose > 0 && new Date(r.date) >= new Date(latestNewPenDate));
-            let doseCount = currentPenDoses.length;
-            
-            currentExpectedDose = (doseCount < 10) ? userSchedule[doseCount] : 0;
-            
+            currentExpectedDose = (currentPenDoses.length < 10) ? userSchedule[currentPenDoses.length] : 0;
             let doseSelect = document.getElementById('dose');
-            let targetValue = currentExpectedDose.toString();
-            
-            let optionExists = Array.from(doseSelect.options).some(opt => opt.value === targetValue);
-            if (optionExists && currentExpectedDose > 0) {
-                doseSelect.value = targetValue;
-            } else {
-                doseSelect.value = "0";
-            }
+            doseSelect.value = currentExpectedDose > 0 ? currentExpectedDose.toString() : "0";
         }
 
         function toggleEditSchedule() {
-            if(penCapacity === 0 && !isEditingSchedule) {
-                return alert("請先在上方『開啟新筆』設定總容量，系統才能幫您計算計畫表喔！");
-            }
-            
+            if(penCapacity === 0 && !isEditingSchedule) return alert("請先開啟新筆設定總容量！");
             isEditingSchedule = !isEditingSchedule;
             let btn = document.getElementById('editBtn');
-            
-            if (isEditingSchedule) {
-                btn.innerText = "儲存計畫";
-                btn.style.background = "#1976D2";
-                btn.style.color = "white";
-            } else {
-                btn.innerText = "編輯計畫";
-                btn.style.background = "none";
-                btn.style.color = "#1976D2";
+            btn.innerText = isEditingSchedule ? "儲存計畫" : "編輯計畫";
+            btn.style.background = isEditingSchedule ? "#1976D2" : "none";
+            btn.style.color = isEditingSchedule ? "white" : "#1976D2";
+            if (!isEditingSchedule) {
                 localStorage.setItem('mounjaro_schedule', JSON.stringify(userSchedule));
-                updateExpectedDoseUI(); 
+                updateExpectedDoseUI();
             }
             renderSchedule();
         }
 
         function updateScheduleValue(index, value) {
-            let val = parseFloat(value);
-            userSchedule[index] = val;
-            
+            userSchedule[index] = parseFloat(value);
             let sum = 0;
             for (let i = 0; i < 10; i++) {
                 sum += userSchedule[i];
                 if (sum > penCapacity) {
-                    let excess = sum - penCapacity;
-                    userSchedule[i] -= excess; 
+                    userSchedule[i] -= (sum - penCapacity);
                     sum = penCapacity;
-                    alert(`注意：計畫總量已達本支筆的上限 (${penCapacity}mg)！後續自動歸零。`);
+                    alert("總量已達上限！");
                 }
                 if (sum === penCapacity && i < 9) {
                     for (let j = i + 1; j < 10; j++) userSchedule[j] = 0;
-                    break; 
+                    break;
                 }
             }
             renderSchedule();
@@ -219,237 +183,120 @@
         function renderSchedule() {
             let grid = document.getElementById('scheduleGrid');
             grid.innerHTML = '';
-            
             let latestNewPenDate = newPenEvents.length > 0 ? newPenEvents[newPenEvents.length - 1].date : "1900-01-01";
-            let currentPenDoses = records.filter(r => r.dose > 0 && new Date(r.date) >= new Date(latestNewPenDate));
-            let doseCount = currentPenDoses.length;
-
-            let currentSum = userSchedule.reduce((a,b)=>a+b, 0);
-            document.getElementById('scheduleNotice').innerText = penCapacity > 0 
-                ? `本支筆總容量: ${penCapacity}mg | 計畫已分配: ${currentSum}mg` 
-                : "尚未設定總容量";
+            let doseCount = records.filter(r => r.dose > 0 && new Date(r.date) >= new Date(latestNewPenDate)).length;
+            document.getElementById('scheduleNotice').innerText = `容量: ${penCapacity}mg | 已分配: ${userSchedule.reduce((a,b)=>a+b, 0)}mg`;
 
             for(let i = 0; i < 10; i++) {
                 let div = document.createElement('div');
                 div.className = 'schedule-item';
                 let currentDose = userSchedule[i];
-                
                 if(!isEditingSchedule) {
                     if(currentDose === 0) div.classList.add('empty');
-                    else if(i < doseCount) div.classList.add('completed'); 
-                    else if (i === doseCount) div.classList.add('current');   
+                    else if(i < doseCount) div.classList.add('completed');
+                    else if(i === doseCount) div.classList.add('current');
                 }
-
                 if(isEditingSchedule) {
-                    let optionsHTML = [0, 2.5, 5, 7.5, 10, 12.5, 15].map(val => 
-                        `<option value="${val}" ${currentDose === val ? 'selected' : ''}>${val === 0 ? '-' : val + 'mg'}</option>`
-                    ).join('');
-                    div.innerHTML = `<span>第 ${i+1} 次</span><select onchange="updateScheduleValue(${i}, this.value)">${optionsHTML}</select>`;
+                    let options = [0, 2.5, 5, 7.5, 10, 12.5, 15].map(v => `<option value="${v}" ${currentDose === v ? 'selected' : ''}>${v === 0 ? '-' : v+'mg'}</option>`).join('');
+                    div.innerHTML = `<span>第${i+1}次</span><select onchange="updateScheduleValue(${i}, this.value)">${options}</select>`;
                 } else {
-                    let text = currentDose > 0 ? `${currentDose} mg` : '-';
-                    div.innerHTML = `<span>第 ${i+1} 次</span><strong>${text}</strong>`;
+                    div.innerHTML = `<span>第${i+1}次</span><strong>${currentDose > 0 ? currentDose+'mg' : '-'}</strong>`;
                 }
                 grid.appendChild(div);
             }
         }
 
         function resetPen() {
-            let selectElement = document.getElementById('penType');
-            let totalDose = parseFloat(selectElement.value); 
-            let penName = selectElement.options[selectElement.selectedIndex].text;
-            let recordDate = document.getElementById('recordDate').value;
-
-            if(confirm(`確定要在 ${recordDate} 開啟「${penName}」嗎？\n這會將庫存重設為 ${totalDose}mg，並重置計畫表。`)) {
-                penCapacity = totalDose;
-                currentRemaining = totalDose;
-                localStorage.setItem('mounjaro_capacity', penCapacity);
-                localStorage.setItem('mounjaro_remaining', currentRemaining);
-                
+            let sel = document.getElementById('penType');
+            let total = parseFloat(sel.value);
+            let name = sel.options[sel.selectedIndex].text;
+            let date = document.getElementById('recordDate').value;
+            if(confirm(`確定開啟「${name}」？此操作會重置計畫。`)) {
+                penCapacity = currentRemaining = total;
+                localStorage.setItem('mounjaro_capacity', total);
+                localStorage.setItem('mounjaro_remaining', total);
                 userSchedule = [0,0,0,0,0,0,0,0,0,0];
                 localStorage.setItem('mounjaro_schedule', JSON.stringify(userSchedule));
-
-                document.getElementById('remainingDose').innerText = currentRemaining;
-                
-                let existingPenIndex = newPenEvents.findIndex(p => p.date === recordDate);
-                if (existingPenIndex === -1) {
-                    newPenEvents.push({ date: recordDate, name: penName });
-                } else {
-                    newPenEvents[existingPenIndex].name = penName;
-                }
-                
+                let idx = newPenEvents.findIndex(p => p.date === date);
+                if (idx === -1) newPenEvents.push({ date: date, name: name }); else newPenEvents[idx].name = name;
                 newPenEvents.sort((a,b) => new Date(a.date) - new Date(b.date));
                 localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
-                
-                alert("💉 新筆設定完成！請點擊『編輯計畫』來安排這支筆的施打進度。");
-                renderSchedule();
-                renderCharts();
-                updateExpectedDoseUI(); 
+                document.getElementById('remainingDose').innerText = total;
+                renderSchedule(); renderCharts(); updateExpectedDoseUI();
             }
         }
 
         function saveRecord() {
             let date = document.getElementById('recordDate').value;
-            let weight = parseFloat(document.getElementById('weight').value) || null;
-            let bodyFat = parseFloat(document.getElementById('bodyFat').value) || null;
-            let visceralFat = parseFloat(document.getElementById('visceralFat').value) || null;
-            let bmr = parseFloat(document.getElementById('bmr').value) || null;
-            let dose = parseFloat(document.getElementById('dose').value) || 0;
+            let w = parseFloat(document.getElementById('weight').value) || null;
+            let f = parseFloat(document.getElementById('bodyFat').value) || null;
+            let v = parseFloat(document.getElementById('visceralFat').value) || null;
+            let b = parseFloat(document.getElementById('bmr').value) || null;
+            let d = parseFloat(document.getElementById('dose').value) || 0;
 
-            if(!weight && !bodyFat && !visceralFat && !bmr && dose === 0) return alert("請至少輸入一項數據再儲存！");
-
-            if(dose > 0) {
-                if(dose > currentRemaining) return alert(`庫存不足！目前僅剩 ${currentRemaining}mg。`);
-                
-                let confirmMsg = "";
-                if (currentExpectedDose > 0 && dose !== currentExpectedDose) {
-                    confirmMsg = `⚠️ 提醒：您選擇的劑量 (${dose}mg) 與計畫表預定的 (${currentExpectedDose}mg) 不符！\n\n確定要扣除 ${dose}mg 的庫存並儲存嗎？`;
-                } else if (currentExpectedDose === 0) {
-                    confirmMsg = `⚠️ 提醒：計畫表目前沒有預定劑量，但您選擇了施打 ${dose}mg。\n\n確定要扣除庫存並儲存嗎？`;
-                } else {
-                    confirmMsg = `確認要記錄並扣除 ${dose}mg 的藥劑庫存嗎？\n\n(💡若今天沒有打針、只是純紀錄體重，請按取消並將劑量改為「沒打請留白」)`;
-                }
-                
-                if (!confirm(confirmMsg)) return; 
-                
-                currentRemaining -= dose;
+            if(!w && !f && !v && !b && d === 0) return alert("請輸入數據！");
+            if(d > 0) {
+                if(d > currentRemaining) return alert("庫存不足！");
+                let msg = (currentExpectedDose > 0 && d !== currentExpectedDose) ? `劑量與計畫不符，確定扣除 ${d}mg？` : `確定扣除 ${d}mg？`;
+                if(!confirm(msg)) return;
+                currentRemaining -= d;
                 localStorage.setItem('mounjaro_remaining', currentRemaining);
                 document.getElementById('remainingDose').innerText = currentRemaining;
             }
 
-            let existingIndex = records.findIndex(r => r.date === date);
-            let newRecord = { date, weight, bodyFat, visceralFat, bmr, dose: (existingIndex !== -1 ? records[existingIndex].dose + dose : dose) };
-            
-            if(existingIndex !== -1) {
-                if(dose === 0) newRecord.dose = records[existingIndex].dose; 
-                records[existingIndex] = newRecord;
-            } else {
-                records.push(newRecord);
-            }
-
+            let idx = records.findIndex(r => r.date === date);
+            let rec = { date, weight: w, bodyFat: f, visceralFat: v, bmr: b, dose: (idx !== -1 ? records[idx].dose + d : d) };
+            if(idx !== -1) { if(d === 0) rec.dose = records[idx].dose; records[idx] = rec; } else { records.push(rec); }
             records.sort((a, b) => new Date(a.date) - new Date(b.date));
             localStorage.setItem('mounjaro_records', JSON.stringify(records));
-
-            alert(`✅ ${date} 紀錄已儲存！`);
-            renderSchedule(); 
-            renderCharts();    
-            updateExpectedDoseUI(); 
+            alert("儲存成功！");
+            renderSchedule(); renderCharts(); updateExpectedDoseUI();
         }
 
-        function createChart(canvasId, title, dataArray, colorHex, allDates) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
-
-            const customPlugin = {
-                id: 'customMarkers_' + canvasId,
-                afterDraw: (chart) => {
-                    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
-                    ctx.save();
-                    
-                    newPenEvents.forEach(penObj => {
-                        const index = allDates.indexOf(penObj.date);
-                        if(index !== -1) {
-                            const xPos = x.getPixelForValue(index);
-                            ctx.beginPath();
-                            ctx.lineWidth = 1.5;
-                            ctx.strokeStyle = 'rgba(229, 57, 53, 0.4)';
-                            ctx.setLineDash([4, 4]);
-                            ctx.moveTo(xPos, top);
-                            ctx.lineTo(xPos, bottom);
-                            ctx.stroke();
-                            
-                            ctx.fillStyle = '#e53935';
-                            ctx.beginPath(); ctx.roundRect(xPos - 14, top - 6, 28, 14, 3); ctx.fill();
-                            ctx.fillStyle = 'white';
-                            ctx.font = 'bold 9px sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('新針', xPos, top + 3);
+        function createChart(id, title, data, color, dates) {
+            let ctx = document.getElementById(id).getContext('2d');
+            if (chartInstances[id]) chartInstances[id].destroy();
+            chartInstances[id] = new Chart(ctx, {
+                type: 'line',
+                data: { labels: dates, datasets: [{ label: title, data: data, borderColor: color, backgroundColor: color + '20', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#fff', spanGaps: true }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false }, title: { display: true, text: title },
+                        tooltip: { callbacks: { footer: (items) => {
+                            let d = items[0].label; let r = records.find(x => x.date === d); let p = newPenEvents.find(x => x.date === d);
+                            let lines = []; if(p) lines.push('🆕啟用: ' + p.name); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
+                            return lines.length > 0 ? '\n' + lines.join('\n') : null;
+                        }}}
+                    },
+                    scales: { y: { grace: '30%' }, x: { grid: { display: false } } }
+                },
+                plugins: [{ id: 'linePlugin', afterDraw: (chart) => {
+                    let { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+                    newPenEvents.forEach(p => {
+                        let idx = dates.indexOf(p.date);
+                        if(idx !== -1) {
+                            let xPos = x.getPixelForValue(idx);
+                            ctx.save(); ctx.beginPath(); ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(229,57,53,0.4)';
+                            ctx.moveTo(xPos, top); ctx.lineTo(xPos, bottom); ctx.stroke();
+                            ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.roundRect(xPos-14, top-6, 28, 14, 3); ctx.fill();
+                            ctx.fillStyle = 'white'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('新針', xPos, top+3); ctx.restore();
                         }
                     });
-                    ctx.restore();
-                }
-            };
-
-            chartInstances[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: allDates,
-                    datasets: [{
-                        label: title,
-                        data: dataArray,
-                        borderColor: colorHex,
-                        backgroundColor: colorHex + '20', 
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderWidth: 2,
-                        spanGaps: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: { padding: { top: 15, bottom: 5 } }, 
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: title, color: '#333', font: { size: 14 } },
-                        tooltip: { 
-                            backgroundColor: 'rgba(44,62,80,0.9)',
-                            padding: 12,
-                            callbacks: {
-                                footer: function(tooltipItems) {
-                                    let date = tooltipItems[0].label;
-                                    let r = records.find(x => x.date === date);
-                                    let penObj = newPenEvents.find(x => x.date === date);
-                                    
-                                    let tooltipLines = [];
-                                    
-                                    if (penObj) {
-                                        tooltipLines.push('🆕 啟用: ' + penObj.name);
-                                    }
-                                    
-                                    if (r && r.dose > 0) {
-                                        tooltipLines.push('💉 施打: ' + r.dose + ' mg');
-                                    }
-                                    
-                                    return tooltipLines.length > 0 ? '\n' + tooltipLines.join('\n') : null;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { 
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            grace: '30%' 
-                        }
-                    }
-                },
-                plugins: [customPlugin]
+                }}]
             });
         }
 
         function renderCharts() {
-            let allDates = [...new Set([...records.map(r=>r.date), ...newPenEvents.map(p=>p.date)])];
-            allDates.sort((a, b) => new Date(a) - new Date(b));
-
-            let weightData = allDates.map(d => { let r = records.find(x => x.date === d); return r ? r.weight : null; });
-            let bodyFatData = allDates.map(d => { let r = records.find(x => x.date === d); return r ? r.bodyFat : null; });
-            let visceralFatData = allDates.map(d => { let r = records.find(x => x.date === d); return r ? r.visceralFat : null; });
-            let bmrData = allDates.map(d => { let r = records.find(x => x.date === d); return r ? r.bmr : null; });
-
-            createChart('weightChart', '體重 (kg)', weightData, '#1976D2', allDates); // 體重改為深藍
-            createChart('bodyFatChart', '體脂 (%)', bodyFatData, '#26c6da', allDates);  // 體脂改為青色/湖水藍
-            createChart('visceralFatChart', '內臟脂肪', visceralFatData, '#ffa726', allDates); // 內臟維持橘色
-            createChart('bmrChart', '基礎代謝 (kcal)', bmrData, '#ab47bc', allDates); // 代謝維持紫色
+            let dates = [...new Set([...records.map(r=>r.date), ...newPenEvents.map(p=>p.date)])].sort((a,b)=>new Date(a)-new Date(b));
+            let getData = (key) => dates.map(d => { let r = records.find(x => x.date === d); return r ? r[key] : null; });
+            createChart('weightChart', '體重 (kg)', getData('weight'), '#1976D2', dates);
+            createChart('bodyFatChart', '體脂 (%)', getData('bodyFat'), '#26c6da', dates);
+            createChart('visceralFatChart', '內臟脂肪', getData('visceralFat'), '#ffa726', dates);
+            createChart('bmrChart', '基礎代謝', getData('bmr'), '#ab47bc', dates);
         }
 
-        function clearData() {
-            if(confirm("⚠️ 警告：這將會清除手機內所有歷史紀錄與庫存！\n確定要繼續嗎？")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
+        function clearData() { if(confirm("確定清除？")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
