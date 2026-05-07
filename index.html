@@ -17,6 +17,8 @@
             --card-bg: #ffffff;
             --text-main: #2c3e50;
             --text-muted: #7f8c8d;
+            --success: #2e7d32;
+            --danger: #d32f2f;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 15px; max-width: 600px; margin: auto; background-color: var(--bg-color); color: var(--text-main); }
         .card { background: var(--card-bg); border: none; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
@@ -28,11 +30,17 @@
         .collapsible-content { transition: max-height 0.3s ease-out; overflow: hidden; }
         .hidden { display: none; }
 
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .result-item { text-align: center; padding: 10px 5px; background: #f8fbff; border-radius: 12px; border: 1px solid #e1f0ff; }
+        .result-label { font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600; }
+        .result-value { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+        .result-value.green { color: var(--success); }
+        .result-value.red { color: var(--danger); }
+
         .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .status-item { text-align: center; padding: 10px; background: #fafafa; border-radius: 12px; border: 1px solid #eee; }
-        .status-label { font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 5px; }
-        .status-value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
-        .status-value.red { color: #e53935; }
+        .status-item { text-align: center; padding: 12px 10px; background: #fafafa; border-radius: 12px; border: 1px solid #eee; }
+        .status-label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px; font-weight: 600; }
+        .status-value { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
 
         .schedule-box { background: #fafafa; border: 1px solid #eeeeee; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
         .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -45,7 +53,10 @@
         .schedule-item { background: white; padding: 10px 4px; border-radius: 8px; text-align: center; border: 1px solid #e0e0e0; }
         .schedule-item.current { background: var(--text-main); border-color: var(--text-main); color: white; transform: scale(1.05); }
         .schedule-item.completed { background: #e3f2fd; border-color: #bbdefb; color: var(--primary-dark); }
-        .schedule-item.empty { opacity: 0.4; background: #f9f9f9; }
+        
+        .chart-filter-box { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .filter-btn { background: #fff; border: 1px solid #ddd; color: var(--text-muted); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.3s; }
+        .filter-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
 
         input, select { padding: 12px; width: 100%; max-width: 100%; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background-color: #fafafa;}
         button.main-btn { padding: 14px; width: 100%; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
@@ -56,16 +67,36 @@
         .history-date { font-weight: 600; color: var(--text-main); }
         .history-dose { background: #e3f2fd; color: var(--primary); padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-right: 8px;}
         .history-newpen { background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; font-weight: bold; display: inline-block; margin-right: 8px;}
-        
         .delete-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: 0.2s; }
-        .delete-btn:hover { color: #e53935; transform: scale(1.1); }
-
-        .chart-wrapper { position: relative; height: 220px; width: 100%; margin-bottom: 30px; }
+        
+        .chart-scroll-container { width: 100%; overflow-x: auto; margin-bottom: 25px; -webkit-overflow-scrolling: touch; border-radius: 8px; background: #fff; }
+        .chart-inner { min-width: 100%; height: 240px; }
+        .chart-scroll-container::-webkit-scrollbar { height: 6px; }
+        .chart-scroll-container::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <h2>猛健樂紀錄小幫手</h2>
+
+    <div class="card">
+        <h3>🏆 減重成果</h3>
+        <div class="results-grid">
+            <div class="result-item">
+                <span class="result-label">較上次變化</span>
+                <span class="result-value" id="resLastChange">--</span><small>kg</small>
+            </div>
+            <div class="result-item">
+                <span class="result-label">平均每週減重</span>
+                <span class="result-value" id="resAvgWeekly">--</span><small>kg</small>
+            </div>
+            <div class="result-item">
+                <span class="result-label">累計已減去</span>
+                <span class="result-value green" id="resTotalLoss">--</span><small>kg</small>
+            </div>
+        </div>
+        <p style="font-size: 0.7rem; color: #999; text-align: center; margin-top: 5px;">* 平均每週計算基於近 4 週數據</p>
+    </div>
 
     <div class="card">
         <h3>💉 藥劑狀態</h3>
@@ -99,8 +130,6 @@
             <p id="scheduleNotice" style="font-size: 0.75rem; color: var(--primary-dark); margin: 10px 0 0 0; text-align: center; font-weight: bold;"></p>
         </div>
         
-        <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 10px;">💡 提示：若要修改過去指標，請選好同一天日期，輸入新數字，劑量選「0 (沒打針)」儲存即可覆蓋。</p>
-
         <div style="margin-bottom: 15px;">
             <label>日期:</label>
             <input type="date" id="recordDate">
@@ -143,11 +172,26 @@
             📈 指標趨勢 <span class="toggle-icon"></span>
         </h3>
         <div id="chartContent" class="collapsible-content">
-            <div class="chart-wrapper"><canvas id="weightChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="bodyFatChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="visceralFatChart"></canvas></div>
-            <div class="chart-wrapper"><canvas id="bmrChart"></canvas></div>
-            <button class="btn-outline" style="margin-top:20px; border-color:#e53935; color:#e53935;" onclick="clearData()">⚠️ 清除所有資料</button>
+            <div class="chart-filter-box">
+                <button class="filter-btn active" id="fAll" onclick="setChartScope('all')">全部</button>
+                <button class="filter-btn" id="f3m" onclick="setChartScope('3m')">近 3 個月</button>
+                <button class="filter-btn" id="f1m" onclick="setChartScope('1m')">近 1 個月</button>
+            </div>
+            
+            <div class="chart-scroll-container">
+                <div class="chart-inner" id="weightChartContainer"><canvas id="weightChart"></canvas></div>
+            </div>
+            <div class="chart-scroll-container">
+                <div class="chart-inner" id="bodyFatChartContainer"><canvas id="bodyFatChart"></canvas></div>
+            </div>
+            <div class="chart-scroll-container">
+                <div class="chart-inner" id="visceralFatChartContainer"><canvas id="visceralFatChart"></canvas></div>
+            </div>
+            <div class="chart-scroll-container">
+                <div class="chart-inner" id="bmrChartContainer"><canvas id="bmrChart"></canvas></div>
+            </div>
+            
+            <button class="btn-outline" style="margin-top:10px; border-color:#e53935; color:#e53935;" onclick="clearData()">⚠️ 清除所有資料</button>
         </div>
     </div>
 
@@ -155,26 +199,12 @@
         let currentRemaining = parseFloat(localStorage.getItem('mounjaro_remaining')) || 0;
         let penCapacity = parseFloat(localStorage.getItem('mounjaro_capacity')) || 0;
         let records = JSON.parse(localStorage.getItem('mounjaro_records')) || [];
-        
-        // --- 核心更新：讓每一支筆都擁有自己的專屬計畫表 ---
         let rawNewPens = JSON.parse(localStorage.getItem('mounjaro_newpens')) || [];
-        let legacySchedule = JSON.parse(localStorage.getItem('mounjaro_schedule')) || [0,0,0,0,0,0,0,0,0,0];
-        
-        let newPenEvents = rawNewPens.map(item => {
-            let pen = typeof item === 'string' ? { date: item, name: '猛健樂', capacity: penCapacity } : item;
-            if (!pen.schedule) pen.schedule = [0,0,0,0,0,0,0,0,0,0]; // 確保舊資料也有 schedule 屬性
-            return pen;
-        });
-
-        // 舊資料轉移：如果最新的筆沒有計畫，就把舊版的計畫塞進去
-        if (newPenEvents.length > 0 && newPenEvents[newPenEvents.length - 1].schedule.every(x => x === 0) && legacySchedule.some(x => x > 0)) {
-            newPenEvents[newPenEvents.length - 1].schedule = [...legacySchedule];
-            localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
-        }
-
-        let userSchedule = newPenEvents.length > 0 ? [...newPenEvents[newPenEvents.length - 1].schedule] : [...legacySchedule];
+        let newPenEvents = rawNewPens.map(item => (typeof item === 'string' ? { date: item, name: '猛健樂', capacity: penCapacity } : item));
+        let userSchedule = newPenEvents.length > 0 ? [...newPenEvents[newPenEvents.length - 1].schedule] : [0,0,0,0,0,0,0,0,0,0];
         let isEditingSchedule = false;
         let chartInstances = {};
+        let chartScope = 'all'; 
 
         window.onload = function() {
             recalculateStock(); 
@@ -188,49 +218,36 @@
                 currentRemaining = 0;
             } else {
                 let latestPen = newPenEvents[newPenEvents.length - 1];
-                if (!latestPen.capacity) {
-                    let match = latestPen.name.match(/總劑量\s*(\d+(\.\d+)?)mg/);
-                    latestPen.capacity = match ? parseFloat(match[1]) : penCapacity;
-                }
-                penCapacity = latestPen.capacity;
-
+                penCapacity = latestPen.capacity || penCapacity;
                 let usedDose = 0;
-                records.forEach(r => {
-                    if (r.date >= latestPen.date) usedDose += r.dose;
-                });
-
+                records.forEach(r => { if (r.date >= latestPen.date) usedDose += r.dose; });
                 currentRemaining = penCapacity - usedDose;
                 if (currentRemaining < 0) currentRemaining = 0; 
             }
-            
             localStorage.setItem('mounjaro_capacity', penCapacity);
             localStorage.setItem('mounjaro_remaining', currentRemaining);
         }
 
-        function toggleSection(contentId, cardId) {
-            const content = document.getElementById(contentId);
-            const card = document.getElementById(cardId);
-            content.classList.toggle('hidden');
-            card.classList.toggle('collapsed');
-            if (contentId === 'chartContent' && !content.classList.contains('hidden')) {
-                renderCharts(); 
-            }
+        function setChartScope(scope) {
+            chartScope = scope;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('f' + scope.charAt(0).toUpperCase() + scope.slice(1)).classList.add('active');
+            renderCharts();
         }
 
         function refreshUI() {
             let latestPenDate = newPenEvents.length > 0 ? newPenEvents[newPenEvents.length - 1].date : "1900-01-01";
             let allInjections = records.filter(r => r.dose > 0);
-            let currentPenRecords = allInjections.filter(r => r.date >= latestPenDate);
-            let doseCount = currentPenRecords.length;
+            let doseCount = allInjections.filter(r => r.date >= latestPenDate).length;
 
             document.getElementById('remainingDose').innerText = currentRemaining;
             document.getElementById('totalInjections').innerText = allInjections.length;
             
+            calculateMedicalResults(); 
+            
             let activePenCapacity = newPenEvents.length > 0 ? newPenEvents[newPenEvents.length - 1].capacity : 20;
             let penTypeSelect = document.getElementById('penType');
-            Array.from(penTypeSelect.options).forEach(opt => {
-                if (parseFloat(opt.value) === activePenCapacity) opt.selected = true;
-            });
+            Array.from(penTypeSelect.options).forEach(opt => { if (parseFloat(opt.value) === activePenCapacity) opt.selected = true; });
             
             let doseSelect = document.getElementById('dose');
             doseSelect.value = (doseCount < 10 && userSchedule[doseCount] > 0) ? userSchedule[doseCount] : "0";
@@ -240,14 +257,70 @@
             renderCharts();
         }
 
+        function calculateMedicalResults() {
+            let wr = records.filter(r => r.weight !== null).sort((a,b) => a.date.localeCompare(b.date));
+            let lastChangeEl = document.getElementById('resLastChange');
+            let avgWeeklyEl = document.getElementById('resAvgWeekly');
+            let totalLossEl = document.getElementById('resTotalLoss');
+
+            if (wr.length >= 1) {
+                let latest = wr[wr.length - 1];
+                let first = wr[0];
+                
+                let totalLoss = (latest.weight - first.weight).toFixed(1);
+                totalLossEl.innerText = totalLoss;
+
+                if (wr.length >= 2) {
+                    let prev = wr[wr.length - 2];
+                    let diff = (latest.weight - prev.weight).toFixed(1);
+                    lastChangeEl.innerText = (diff > 0 ? '+' : '') + diff;
+                    lastChangeEl.className = 'result-value ' + (diff <= 0 ? 'green' : 'red');
+                } else {
+                    lastChangeEl.innerText = '--';
+                    lastChangeEl.className = 'result-value';
+                }
+
+                let now = new Date(latest.date);
+                let fourWeeksAgo = new Date(now);
+                fourWeeksAgo.setDate(now.getDate() - 28);
+                let fourWeeksAgoStr = fourWeeksAgo.toISOString().split('T')[0];
+
+                let rangeRecords = wr.filter(r => r.date >= fourWeeksAgoStr);
+                if (rangeRecords.length >= 2) {
+                    let oldestInRange = rangeRecords[0];
+                    let latestInRange = rangeRecords[rangeRecords.length - 1];
+                    let weightDiff = oldestInRange.weight - latestInRange.weight; 
+                    
+                    let days = (new Date(latestInRange.date) - new Date(oldestInRange.date)) / (1000 * 60 * 60 * 24);
+                    let weeks = days / 7;
+                    let avg = weeks > 0 ? (weightDiff / weeks).toFixed(2) : "--";
+                    avgWeeklyEl.innerText = avg;
+                    avgWeeklyEl.className = 'result-value ' + (avg >= 0 ? 'green' : 'red');
+                } else {
+                    avgWeeklyEl.innerText = "--";
+                    avgWeeklyEl.className = 'result-value';
+                }
+            } else {
+                totalLossEl.innerText = "--";
+                lastChangeEl.innerText = "--";
+                avgWeeklyEl.innerText = "--";
+            }
+        }
+
+        function toggleSection(contentId, cardId) {
+            const content = document.getElementById(contentId);
+            const card = document.getElementById(cardId);
+            content.classList.toggle('hidden');
+            card.classList.toggle('collapsed');
+            if (contentId === 'chartContent' && !content.classList.contains('hidden')) renderCharts(); 
+        }
+
         function renderSchedule(doseCount) {
             let grid = document.getElementById('scheduleGrid');
             grid.innerHTML = '';
-            
             let sum = userSchedule.reduce((a,b)=>a+b, 0);
             let activePenName = newPenEvents.length > 0 ? newPenEvents[newPenEvents.length - 1].name.split(' (')[0] : "未設定筆針";
-            
-            document.getElementById('scheduleNotice').innerText = `【${activePenName}】容量: ${penCapacity}mg | 已分配: ${sum}mg | 剩餘未分配: ${penCapacity - sum}mg`;
+            document.getElementById('scheduleNotice').innerText = `【${activePenName}】容量: ${penCapacity}mg | 已分配: ${sum}mg | 剩餘: ${penCapacity - sum}mg`;
 
             for(let i = 0; i < 10; i++) {
                 let div = document.createElement('div');
@@ -272,140 +345,55 @@
             let val = parseFloat(value);
             userSchedule[index] = val;
             let sum = userSchedule.reduce((a,b)=>a+b, 0);
-            
             if (sum > penCapacity) {
-                alert(`注意：計畫總量已達本支筆的上限 (${penCapacity}mg)！`);
+                alert(`計畫總量已達本支筆上限 (${penCapacity}mg)！`);
                 userSchedule[index] -= (sum - penCapacity); 
             }
             renderSchedule(); 
         }
 
-        function saveCurrentScheduleToPen() {
-            if (newPenEvents.length > 0) {
-                newPenEvents[newPenEvents.length - 1].schedule = [...userSchedule];
-                localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
+        function deleteHistoryItem(type, date) {
+            if(!confirm(`確定要刪除這筆紀錄嗎？`)) return;
+            if (type === 'dose') {
+                let idx = records.findIndex(r => r.date === date);
+                if (idx !== -1) {
+                    records[idx].dose = 0;
+                    if (!records[idx].weight && !records[idx].bodyFat && !records[idx].visceralFat && !records[idx].bmr) records.splice(idx, 1);
+                }
+            } else {
+                let idx = newPenEvents.findIndex(p => p.date === date);
+                if (idx !== -1) newPenEvents.splice(idx, 1);
             }
-            // 備份到全域，確保相容性
-            localStorage.setItem('mounjaro_schedule', JSON.stringify(userSchedule));
-        }
-
-        function toggleEditSchedule() {
-            if(penCapacity === 0 && !isEditingSchedule) return alert("請先開啟新筆設定總容量！");
-            isEditingSchedule = !isEditingSchedule;
-            if(!isEditingSchedule) {
-                saveCurrentScheduleToPen(); // 儲存時，把計畫綁定到當前的筆
-            }
-            document.getElementById('editBtn').innerText = isEditingSchedule ? "儲存" : "編輯計畫";
-            refreshUI();
+            localStorage.setItem('mounjaro_records', JSON.stringify(records));
+            localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
+            recalculateStock(); refreshUI();
         }
 
         function renderHistory(injections, newPens) {
             let list = document.getElementById('historyList');
             let noHistory = document.getElementById('noHistory');
             list.innerHTML = '';
-            
-            if (injections.length === 0 && newPens.length === 0) { 
-                noHistory.style.display = 'block'; 
-                return; 
-            }
+            if (injections.length === 0 && newPens.length === 0) { noHistory.style.display = 'block'; return; }
             noHistory.style.display = 'none';
-
-            let combinedHistory = [];
-            injections.forEach(r => combinedHistory.push({ type: 'dose', date: r.date, text: `${r.dose} mg` }));
-            newPens.forEach(p => combinedHistory.push({ type: 'pen', date: p.date, text: p.name }));
-
-            combinedHistory.sort((a, b) => {
-                if (a.date === b.date) return a.type === 'dose' ? -1 : 1; 
-                return b.date.localeCompare(a.date);
-            });
-
-            combinedHistory.forEach(item => {
-                let li = document.createElement('li');
-                li.className = 'history-item';
-                let delBtn = `<button class="delete-btn" onclick="deleteHistoryItem('${item.type}', '${item.date}')" title="刪除此紀錄">🗑️</button>`;
-                
-                if (item.type === 'dose') {
-                    li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="history-dose">💉 ${item.text}</span> ${delBtn}</div>`;
-                } else {
-                    li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="history-newpen">🆕 啟用: ${item.text}</span> ${delBtn}</div>`;
-                }
+            let combined = [...injections.map(r=>({type:'dose',date:r.date,text:r.dose+'mg'})), ...newPens.map(p=>({type:'pen',date:p.date,text:p.name}))];
+            combined.sort((a,b) => b.date.localeCompare(a.date));
+            combined.forEach(item => {
+                let li = document.createElement('li'); li.className = 'history-item';
+                let del = `<button class="delete-btn" onclick="deleteHistoryItem('${item.type}','${item.date}')">🗑️</button>`;
+                li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
                 list.appendChild(li);
             });
-        }
-
-        function deleteHistoryItem(type, date) {
-            if (type === 'dose') {
-                if(!confirm(`確定要刪除 ${date} 的施打紀錄嗎？\n(💡 刪除後，該次劑量會自動加回上方庫存)`)) return;
-                
-                let idx = records.findIndex(r => r.date === date);
-                if (idx !== -1) {
-                    records[idx].dose = 0; 
-                    let r = records[idx];
-                    if (!r.weight && !r.bodyFat && !r.visceralFat && !r.bmr && r.dose === 0) {
-                        records.splice(idx, 1);
-                    }
-                    localStorage.setItem('mounjaro_records', JSON.stringify(records));
-                }
-            } else if (type === 'pen') {
-                let idx = newPenEvents.findIndex(p => p.date === date);
-                if (idx === -1) return;
-                
-                let startDate = date;
-                let endDate = (idx < newPenEvents.length - 1) ? newPenEvents[idx + 1].date : "9999-12-31";
-                let affectedDoses = records.filter(r => r.dose > 0 && r.date >= startDate && r.date < endDate);
-                
-                let msg = `確定要刪除 ${date} 開啟新筆的紀錄嗎？\n`;
-                if (affectedDoses.length > 0) msg += `⚠️ 警告：跟隨這支筆的 ${affectedDoses.length} 筆施打紀錄也會被「一併刪除」！\n`;
-                msg += `(刪除後，庫存與計畫表將退回前一支筆的狀態)`;
-                
-                if(!confirm(msg)) return;
-
-                records.forEach(r => {
-                    if (r.dose > 0 && r.date >= startDate && r.date < endDate) r.dose = 0;
-                });
-                records = records.filter(r => r.weight || r.bodyFat || r.visceralFat || r.bmr || r.dose > 0);
-                localStorage.setItem('mounjaro_records', JSON.stringify(records));
-
-                // 刪除該筆新針紀錄
-                newPenEvents.splice(idx, 1);
-                localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
-
-                // 恢復為「上一支筆」的計畫表
-                if (newPenEvents.length > 0) {
-                    userSchedule = [...newPenEvents[newPenEvents.length - 1].schedule];
-                } else {
-                    userSchedule = [0,0,0,0,0,0,0,0,0,0];
-                }
-                localStorage.setItem('mounjaro_schedule', JSON.stringify(userSchedule));
-            }
-            
-            recalculateStock(); 
-            refreshUI();
         }
 
         function resetPen() {
             let sel = document.getElementById('penType');
             let total = parseFloat(sel.value);
             let date = document.getElementById('recordDate').value;
-            let name = sel.options[sel.selectedIndex].text;
-            
             if(confirm(`確認開啟新筆 (${total}mg)？這會重置計畫進度。`)) {
-                userSchedule = [0,0,0,0,0,0,0,0,0,0]; 
-                
-                let idx = newPenEvents.findIndex(p => p.date === date);
-                if (idx === -1) {
-                    newPenEvents.push({ date: date, name: name, capacity: total, schedule: [...userSchedule] });
-                } else {
-                    newPenEvents[idx].name = name;
-                    newPenEvents[idx].capacity = total;
-                    newPenEvents[idx].schedule = [...userSchedule];
-                }
-                newPenEvents.sort((a,b) => a.date.localeCompare(b.date));
+                newPenEvents.push({ date: date, name: sel.options[sel.selectedIndex].text, capacity: total, schedule: [0,0,0,0,0,0,0,0,0,0] });
+                userSchedule = [0,0,0,0,0,0,0,0,0,0];
                 localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
-                
-                saveCurrentScheduleToPen(); // 確保剛建好的空白計畫被存檔
-                recalculateStock(); 
-                refreshUI();
+                recalculateStock(); refreshUI();
             }
         }
 
@@ -416,64 +404,111 @@
             let f = parseFloat(document.getElementById('bodyFat').value) || null;
             let v = parseFloat(document.getElementById('visceralFat').value) || null;
             let b = parseFloat(document.getElementById('bmr').value) || null;
-
             if(!w && !f && !v && !b && d === 0) return alert("請輸入數據！");
-            if(d > 0) {
-                if(d > currentRemaining) return alert("庫存不足！");
-                if(!confirm(`確認扣除 ${d}mg 庫存嗎？`)) return;
-            }
-
             let idx = records.findIndex(r => r.date === date);
-            if(idx !== -1) {
-                records[idx] = { date, weight: w||records[idx].weight, bodyFat: f||records[idx].bodyFat, visceralFat: v||records[idx].visceralFat, bmr: b||records[idx].bmr, dose: records[idx].dose + d };
-            } else {
-                records.push({ date, weight: w, bodyFat: f, visceralFat: v, bmr: b, dose: d });
-            }
+            if(idx !== -1) records[idx] = { date, weight: w||records[idx].weight, bodyFat: f||records[idx].bodyFat, visceralFat: v||records[idx].visceralFat, bmr: b||records[idx].bmr, dose: records[idx].dose + d };
+            else records.push({ date, weight: w, bodyFat: f, visceralFat: v, bmr: b, dose: d });
             records.sort((a,b) => a.date.localeCompare(b.date));
             localStorage.setItem('mounjaro_records', JSON.stringify(records));
-            
-            recalculateStock(); 
-            
-            document.getElementById('weight').value = '';
-            document.getElementById('bodyFat').value = '';
-            document.getElementById('visceralFat').value = '';
-            document.getElementById('bmr').value = '';
-            
-            alert("儲存成功！");
-            refreshUI();
+            document.querySelectorAll('input[type="number"]').forEach(el => el.value = '');
+            alert("儲存成功！"); recalculateStock(); refreshUI();
         }
 
         function createChart(id, title, data, color, dates) {
             let ctx = document.getElementById(id).getContext('2d');
+            let container = document.getElementById(id + 'Container');
+            let minPointSpacing = 45; 
+            let calculatedWidth = dates.length * minPointSpacing;
+            container.style.width = Math.max(container.parentElement.clientWidth, calculatedWidth) + 'px';
+
             if (chartInstances[id]) chartInstances[id].destroy();
+            
+            let pointColors = dates.map(d => {
+                let rec = records.find(r => r.date === d);
+                return (rec && rec.dose > 0) ? color : '#ffffff'; 
+            });
+
             chartInstances[id] = new Chart(ctx, {
                 type: 'line',
-                data: { labels: dates, datasets: [{ label: title, data: data, borderColor: color, backgroundColor: color + '20', fill: true, tension: 0.3, pointRadius: 5, spanGaps: true }] },
+                data: { 
+                    labels: dates, 
+                    datasets: [{ 
+                        label: title, 
+                        data: data, 
+                        borderColor: color, 
+                        backgroundColor: color + '20', 
+                        fill: true, 
+                        tension: 0.3, 
+                        pointRadius: 6,
+                        pointBorderWidth: 2,
+                        pointBackgroundColor: pointColors, 
+                        spanGaps: true 
+                    }] 
+                },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false }, title: { display: true, text: title },
                         tooltip: { callbacks: { footer: (items) => {
                             let d = items[0].label; let r = records.find(x => x.date === d); let p = newPenEvents.find(x => x.date === d);
-                            let lines = []; if(p) lines.push('🆕新筆: ' + p.name); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
-                            return lines.join('\n');
+                            let lines = []; if(p) lines.push('🆕啟用: ' + p.name); if(r && r.dose > 0) lines.push('💉施打: ' + r.dose + 'mg');
+                            return lines.length > 0 ? '\n' + lines.join('\n') : null;
                         }}}
                     },
-                    scales: { y: { grace: '30%' } }
-                }
+                    scales: { y: { grace: '20%' }, x: { grid: { display: false } } }
+                },
+                plugins: [{
+                    id: 'linePlugin',
+                    afterDraw: (chart) => {
+                        let { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+                        newPenEvents.forEach(p => {
+                            let idx = dates.indexOf(p.date);
+                            if(idx !== -1) {
+                                let xPos = x.getPixelForValue(idx);
+                                ctx.save(); ctx.beginPath(); ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(229,57,53,0.4)';
+                                ctx.moveTo(xPos, top); ctx.lineTo(xPos, bottom); ctx.stroke();
+                                ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.roundRect(xPos-14, top-6, 28, 14, 3); ctx.fill();
+                                ctx.fillStyle = 'white'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('新針', xPos, top+3); ctx.restore();
+                            }
+                        });
+                    }
+                }]
             });
+            container.parentElement.scrollLeft = container.scrollWidth;
         }
 
         function renderCharts() {
-            const chartContent = document.getElementById('chartContent');
-            if (chartContent.classList.contains('hidden')) return; 
-
+            if (document.getElementById('chartContent').classList.contains('hidden')) return;
+            
             let dates = [...new Set([...records.map(r=>r.date), ...newPenEvents.map(p=>p.date)])].sort();
+            
+            // 核心修正：以紀錄中的「最後一天」做為基準點來過濾 1 個月或 3 個月
+            if (chartScope !== 'all' && dates.length > 0) {
+                let latestDateInRecord = new Date(dates[dates.length - 1]);
+                let limit = new Date(latestDateInRecord);
+                
+                if (chartScope === '1m') limit.setMonth(limit.getMonth() - 1);
+                if (chartScope === '3m') limit.setMonth(limit.getMonth() - 3);
+                
+                let limitStr = limit.toISOString().split('T')[0];
+                dates = dates.filter(d => d >= limitStr);
+            }
+
             let getData = (key) => dates.map(d => { let r = records.find(x => x.date === d); return r ? r[key] : null; });
             createChart('weightChart', '體重 (kg)', getData('weight'), '#1976D2', dates);
             createChart('bodyFatChart', '體脂 (%)', getData('bodyFat'), '#26c6da', dates);
             createChart('visceralFatChart', '內臟脂肪', getData('visceralFat'), '#ffa726', dates);
             createChart('bmrChart', '基礎代謝', getData('bmr'), '#ab47bc', dates);
+        }
+
+        function toggleEditSchedule() {
+            isEditingSchedule = !isEditingSchedule;
+            if(!isEditingSchedule && newPenEvents.length > 0) {
+                newPenEvents[newPenEvents.length - 1].schedule = [...userSchedule];
+                localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
+            }
+            document.getElementById('editBtn').innerText = isEditingSchedule ? "儲存" : "編輯計畫";
+            refreshUI();
         }
 
         function clearData() { if(confirm("確定重置所有資料？")) { localStorage.clear(); location.reload(); } }
