@@ -226,7 +226,13 @@
         window.onload = function() {
             recalculateStock(); 
             refreshUI();
-            document.getElementById('recordDate').value = new Date().toISOString().split('T')[0];
+            
+            // 修正：抓取使用者本地裝置的今天日期，徹底解決半夜出現時差的問題
+            let today = new Date();
+            let yyyy = today.getFullYear();
+            let mm = String(today.getMonth() + 1).padStart(2, '0');
+            let dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('recordDate').value = `${yyyy}-${mm}-${dd}`;
         };
 
         function recalculateStock() {
@@ -452,7 +458,7 @@
             combined.forEach(item => {
                 let li = document.createElement('li'); li.className = 'history-item';
                 let del = `<button class="delete-btn" onclick="deleteHistoryItem('${item.type}','${item.date}')">🗑️</button>`;
-                li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
+                li.innerHTML = `<span class="history-date">${item.date}</span><div class="history-right"><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
                 list.appendChild(li);
             });
         }
