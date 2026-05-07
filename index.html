@@ -70,7 +70,6 @@
         .delete-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: 0.2s; }
         
         .chart-scroll-container { width: 100%; overflow-x: auto; margin-bottom: 25px; -webkit-overflow-scrolling: touch; border-radius: 8px; background: #fff; padding-bottom: 8px; }
-        /* 這裡加上 position: relative 確保 Chart.js 知道邊界 */
         .chart-inner { position: relative; min-width: 100%; height: 240px; } 
         .chart-scroll-container::-webkit-scrollbar { height: 12px; -webkit-appearance: none; }
         .chart-scroll-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
@@ -370,22 +369,62 @@
             renderSchedule(); 
         }
 
+        // --- 核心修正區：加入「保留體重」或「整筆刪除」的智慧選擇邏輯 ---
         function deleteHistoryItem(type, date) {
-            if(!confirm(`確定要刪除這筆紀錄嗎？`)) return;
             if (type === 'dose') {
+                if(!confirm(`確定要刪除 ${date} 的施打紀錄嗎？\n(💡 刪除後，該次劑量會自動加回上方庫存)`)) return;
+                
                 let idx = records.findIndex(r => r.date === date);
                 if (idx !== -1) {
-                    records[idx].dose = 0;
-                    if (!records[idx].weight && !records[idx].bodyFat && !records[idx].visceralFat && !records[idx].bmr) records.splice(idx, 1);
+                    let r = records[idx];
+                    let hasMetrics = r.weight || r.bodyFat || r.visceralFat || r.bmr;
+                    
+                    if (hasMetrics) {
+                        if (confirm(`【${date}】這天還有記錄「體重等指標」。\n請問要連同體重指標【整筆一起刪除】嗎？\n\n▶ 按「確定」：整筆完全清空\n▶ 按「取消」：保留體重，僅刪除打針紀錄`)) {
+                            records.splice(idx, 1);
+                        } else {
+                            records[idx].dose = 0;
+                        }
+                    } else {
+                        records.splice(idx, 1);
+                    }
                 }
-            } else {
+            } else if (type === 'pen') {
                 let idx = newPenEvents.findIndex(p => p.date === date);
-                if (idx !== -1) newPenEvents.splice(idx, 1);
+                if (idx === -1) return;
+
+                let startDate = date;
+                let endDate = (idx < newPenEvents.length - 1) ? newPenEvents[idx + 1].date : "9999-12-31";
+                let affectedDoses = records.filter(r => r.dose > 0 && r.date >= startDate && r.date < endDate);
+
+                let msg = `確定要刪除這筆開啟新針的紀錄嗎？\n`;
+                if (affectedDoses.length > 0) {
+                    msg += `⚠️ 注意：跟著這支筆施打的 ${affectedDoses.length} 筆紀錄也會一併清除！\n`;
+                }
+                msg += `(計畫表將自動退回上一支筆的設定)`;
+
+                if(!confirm(msg)) return;
+
+                records.forEach(r => {
+                    if (r.dose > 0 && r.date >= startDate && r.date < endDate) r.dose = 0;
+                });
+                records = records.filter(r => r.weight || r.bodyFat || r.visceralFat || r.bmr || r.dose > 0);
+
+                newPenEvents.splice(idx, 1);
+
+                if (newPenEvents.length > 0) {
+                    userSchedule = [...newPenEvents[newPenEvents.length - 1].schedule];
+                } else {
+                    userSchedule = [0,0,0,0,0,0,0,0,0,0];
+                }
             }
+
+            localStorage.setItem('mounjaro_schedule', JSON.stringify(userSchedule));
             localStorage.setItem('mounjaro_records', JSON.stringify(records));
             localStorage.setItem('mounjaro_newpens', JSON.stringify(newPenEvents));
             recalculateStock(); refreshUI();
         }
+        // -----------------------------------------------------------
 
         function renderHistory(injections, newPens) {
             let list = document.getElementById('historyList');
@@ -449,14 +488,11 @@
             let ctx = document.getElementById(id).getContext('2d');
             let container = document.getElementById(id + 'Container');
             
-            // --- 唯一修改的地方：加大間距，讓圖表寬度大於手機螢幕，強制產生滾動條 ---
             let minPointSpacing = 75; 
             let parentWidth = container.parentElement.clientWidth || window.innerWidth - 60;
             let calculatedWidth = dates.length * minPointSpacing;
             
-            // 將圖表的容器寬度固定，如果點太少就用預設螢幕寬，點多就無限向右長
             container.style.width = Math.max(parentWidth, calculatedWidth) + 'px';
-            // -----------------------------------------------------------
 
             if (chartInstances[id]) chartInstances[id].destroy();
             
@@ -512,7 +548,6 @@
                 }]
             });
             
-            // 讓圖表畫完後，自動將滾動條滑到最右側（看到最新資料）
             setTimeout(() => {
                 container.parentElement.scrollLeft = container.parentElement.scrollWidth;
             }, 50);
