@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>猛健樂紀錄小幫手</title>
+    <title>立群醫療體系｜猛健樂紀錄小幫手</title>
     
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#1976D2">
@@ -22,7 +22,8 @@
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 15px; max-width: 600px; margin: auto; background-color: var(--bg-color); color: var(--text-main); }
         .card { background: var(--card-bg); border: none; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
-        h2 { text-align: center; color: var(--text-main); font-weight: 700; letter-spacing: 1px; }
+        h2 { text-align: center; color: var(--text-main); font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
+        .sub-title { text-align: center; color: var(--primary); font-weight: bold; font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; }
         
         h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #e3f2fd; padding-bottom: 10px; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .toggle-icon::after { content: '▼'; font-size: 0.8rem; margin-left: 10px; transition: 0.3s; }
@@ -77,11 +78,15 @@
         .chart-scroll-container::-webkit-scrollbar-thumb:hover, .chart-scroll-container::-webkit-scrollbar-thumb:active { background: var(--primary); }
         
         .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+
+        /* 版權與免責聲明區塊樣式 */
+        .footer-note { text-align: center; font-size: 0.75rem; color: #999; margin: 30px 0 20px; line-height: 1.6; }
     </style>
 </head>
 <body>
 
-    <h2>猛健樂紀錄小幫手</h2>
+    <h2>立群醫療體系</h2>
+    <p class="sub-title">猛健樂紀錄小幫手</p>
 
     <div class="card">
         <h3>🏆 減重成果</h3>
@@ -212,6 +217,12 @@
         </div>
     </div>
 
+    <div class="footer-note">
+        本工具由 <strong>立群醫療體系</strong> 開發提供，僅供本院患者日常紀錄輔助使用。<br>
+        實際劑量與療程請依循醫師專業指示，若有不適請立即回診。<br>
+        &copy; 2026 立群醫療體系 版權所有
+    </div>
+
     <script>
         let currentRemaining = parseFloat(localStorage.getItem('mounjaro_remaining')) || 0;
         let penCapacity = parseFloat(localStorage.getItem('mounjaro_capacity')) || 0;
@@ -234,13 +245,11 @@
             document.getElementById('recordDate').value = `${yyyy}-${mm}-${dd}`;
         };
 
-        // --- 核心新增：監聽網頁從背景回到螢幕（可見）時的事件 ---
         document.addEventListener("visibilitychange", function() {
             if (document.visibilityState === 'visible') {
                 recalculateStock(); 
                 refreshUI();
                 
-                // 強制讓日期回到當下真正的「今天」
                 let today = new Date();
                 let yyyy = today.getFullYear();
                 let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -248,7 +257,6 @@
                 document.getElementById('recordDate').value = `${yyyy}-${mm}-${dd}`;
             }
         });
-        // ---------------------------------------------------
 
         function recalculateStock() {
             if (newPenEvents.length === 0) {
@@ -473,7 +481,7 @@
             combined.forEach(item => {
                 let li = document.createElement('li'); li.className = 'history-item';
                 let del = `<button class="delete-btn" onclick="deleteHistoryItem('${item.type}','${item.date}')">🗑️</button>`;
-                li.innerHTML = `<span class="history-date">${item.date}</span><div class="history-right"><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
+                li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
                 list.appendChild(li);
             });
         }
@@ -562,6 +570,20 @@
                     scales: { y: { grace: '20%' }, x: { grid: { display: false } } }
                 },
                 plugins: [{
+                    // 加入浮水印
+                    id: 'watermark',
+                    beforeDraw: (chart) => {
+                        let { ctx, chartArea } = chart;
+                        if (!chartArea) return;
+                        ctx.save();
+                        ctx.font = 'bold 16px sans-serif';
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+                        ctx.textAlign = 'right';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText('立群醫療體系', chartArea.right - 5, chartArea.bottom - 5);
+                        ctx.restore();
+                    }
+                }, {
                     id: 'linePlugin',
                     afterDraw: (chart) => {
                         let { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
