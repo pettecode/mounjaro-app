@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>立群醫療體系｜猛健樂紀錄小幫手</title>
+    <title>猛健樂紀錄小幫手｜立群醫療體系</title>
     
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#1976D2">
@@ -38,10 +38,12 @@
         .result-value.green { color: var(--success); }
         .result-value.red { color: var(--danger); }
 
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .status-item { text-align: center; padding: 12px 10px; background: #fafafa; border-radius: 12px; border: 1px solid #eee; }
-        .status-label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px; font-weight: 600; }
-        .status-value { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        /* --- 唯一修改：把藥劑狀態的框框變大、字體加粗加大 --- */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
+        .status-item { text-align: center; padding: 24px 15px; background: #fafafa; border-radius: 16px; border: 1px solid #eee; }
+        .status-label { font-size: 0.95rem; color: var(--text-muted); display: block; margin-bottom: 8px; font-weight: 600; }
+        .status-value { font-size: 2.2rem; font-weight: 800; color: var(--text-main); }
+        /* ----------------------------------------------------- */
 
         .schedule-box { background: #fafafa; border: 1px solid #eeeeee; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
         .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -85,8 +87,8 @@
 </head>
 <body>
 
-    <h2>立群醫療體系</h2>
-    <p class="sub-title">猛健樂紀錄小幫手</p>
+    <h2>猛健樂紀錄小幫手</h2>
+    <p class="sub-title">立群醫療體系</p>
 
     <div class="card">
         <h3>🏆 減重成果</h3>
@@ -481,7 +483,7 @@
             combined.forEach(item => {
                 let li = document.createElement('li'); li.className = 'history-item';
                 let del = `<button class="delete-btn" onclick="deleteHistoryItem('${item.type}','${item.date}')">🗑️</button>`;
-                li.innerHTML = `<span class="history-date">${item.date}</span><div><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
+                li.innerHTML = `<span class="history-date">${item.date}</span><div class="history-right"><span class="${item.type==='dose'?'history-dose':'history-newpen'}">${item.type==='dose'?'💉 ':'🆕 '}${item.text}</span>${del}</div>`;
                 list.appendChild(li);
             });
         }
